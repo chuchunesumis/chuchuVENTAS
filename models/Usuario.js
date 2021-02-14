@@ -32,12 +32,12 @@ const UsuariosSchema = mongoose.Schema({
     },
     creado: {
         type: Date,
-        default: Date.now() 
+        default: Date.now
     },
     habilitado: {
         type: Boolean,
         default: true
     }
 });
-
+// Se hizo modificación del Date.now() por Date.now para obtener la hora del sistema exacta
 module.exports = mongoose.model('Usuario', UsuariosSchema);

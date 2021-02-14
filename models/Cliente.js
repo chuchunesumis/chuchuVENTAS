@@ -29,7 +29,7 @@ const ClientesSchema = mongoose.Schema({
     },
     creado: {
         type: Date,
-        default: Date.now() 
+        default: Date.now
     },    
     empresa: {
         type: mongoose.Schema.Types.ObjectId, 
@@ -43,5 +43,5 @@ const ClientesSchema = mongoose.Schema({
     }
 
 });
-
+// Se hizo modificación del Date.now() por Date.now para obtener la hora del sistema exacta
 module.exports = mongoose.model('Cliente', ClientesSchema);

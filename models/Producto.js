@@ -18,7 +18,7 @@ const ProductosSchema = mongoose.Schema({
     },
     creado: {
         type: Date,
-        default: Date.now() 
+        default: Date.now
     },
     empresa: {
         type: mongoose.Schema.Types.ObjectId, 
@@ -26,7 +26,7 @@ const ProductosSchema = mongoose.Schema({
         ref: 'Empresa'
     }
 });
-
+// Se hizo modificación del Date.now() por Date.now para obtener la hora del sistema exacta
 ProductosSchema.index({ nombre: 'text' });
 
 module.exports = mongoose.model('Producto', ProductosSchema);
