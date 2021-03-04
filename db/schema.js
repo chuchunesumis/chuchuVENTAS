@@ -10,8 +10,8 @@ const typeDefs = gql`
         email: String
         empresa: Empresa
         creado: Float
-        habilitado: Boolean
-        tipo: Int
+        habilitado: String
+        tipo: String
     }
 
     #
@@ -25,8 +25,8 @@ const typeDefs = gql`
         email: String
         empresa: ID
         creado: Float
-        habilitado: Boolean
-        tipo: Int
+        habilitado: String
+        tipo: String
     }
 
     type Token {
@@ -105,10 +105,17 @@ const typeDefs = gql`
         nombre: String
         apellido: String
         empresa: ID
+        tipo: String
+        habilitado: String
+        
     }
 
     input UsuarioInputPassword {
         password: String!
+    }
+
+    input UsuarioInputEmail {
+        email: String!
     }
 
     input AutenticarInput {
@@ -172,9 +179,11 @@ const typeDefs = gql`
         obtenerUsuarios: [Usuario]
         obtenerUsuariosConEmpresa: [Usuario]
         obtenerUsuariosSinEmpresa: [Usuario]
+        obtenerUsuarioPorId(id: ID!) : UsuarioSimple
 
         # Empresa
         obtenerEmpresas: [Empresa]
+        obtenerEmpresa(id: ID!) : Empresa
 
         # Productos
         obtenerProductos: [Producto]        
@@ -207,8 +216,9 @@ const typeDefs = gql`
         # Usuarios
         nuevoUsuario(input: UsuarioInput) : Usuario
         autenticarUsuario(input: AutenticarInput) : Token
-        actualizarUsuario( id: ID!, input: UsuarioInputActualizar ): Usuario # agregado por mí
+        actualizarUsuario( id: ID!, input: UsuarioInputActualizar ): UsuarioSimple # agregado por mí
         actualizarUsuarioPassword( id: ID!, input: UsuarioInputPassword ): String # agregado por mí
+        actualizarUsuarioEmail( id: ID!, input: UsuarioInputEmail ): String # agregado por mí
         eliminarUsuario(id: ID!) : String
 
         # Empresas

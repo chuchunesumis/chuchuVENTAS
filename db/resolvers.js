@@ -11,6 +11,8 @@ require('dotenv').config({ path: 'variables.env' });
 const crearToken = (usuario, secreta, expiresIn) => {
     
     const { id, email, nombre, apellido, empresa, habilitado, tipo } = usuario; 
+
+    // console.log(usuario)
     
     /**
      * Los campos agregados al jwt.sign, serán añadidos al token,
@@ -63,6 +65,15 @@ const resolvers = {
                 console.log(error);
             }
         },
+        obtenerUsuarioPorId: async (_, { id }) => {
+            const usuario = await Usuario.findById(id);
+
+            if(!usuario) {
+                throw new Error('Usuario no encontrado');
+            }
+
+            return usuario;
+        },
         obtenerEmpresas: async () => {
             try {
                 const empresas = await Empresa.find({});
@@ -70,6 +81,15 @@ const resolvers = {
             } catch (error) {
                 console.log(error);
             }
+        },
+        obtenerEmpresa: async (_, { id }) => {            
+            const empresa = await Empresa.findById(id);
+            
+            if(!empresa) {
+                throw new Error('Empresa no encontrada');
+            }
+
+            return empresa;
         },
         obtenerProductos: async () => {
             try {
@@ -235,20 +255,20 @@ const resolvers = {
                         as: "cliente"
                     }
                 },
-                {
-                    $limit: 10
-                },
+                // {
+                //     $limit: 10
+                // },
                 {
                     $sort : {total : -1}
                 }
             ]);
 
             // verificar si el usuario tiene los privilegios
-            if(ctx.usuario.tipo === 1) {
+            if(ctx.usuario.tipo == 1) {
                 throw new Error('No tiene las credenciales para acceder a esa información');
             }
             
-            if(ctx.usuario.tipo === 2 || ctx.usuario.tipo === 3) {
+            if(ctx.usuario.tipo == 2 || ctx.usuario.tipo == 3) {
                 return clientes;
             } 
         },
@@ -284,20 +304,20 @@ const resolvers = {
                         as: "cliente"
                     }
                 },
-                {
-                    $limit: 10
-                },
+                // {
+                //     $limit: 10
+                // },
                 {
                     $sort : { total : -1 }
                 }
             ]);
 
             // verificar si el usuario tiene los privilegios
-            if(ctx.usuario.tipo === 1) {
+            if(ctx.usuario.tipo == 1) {
                 throw new Error('No tiene las credenciales para acceder a esa información');
             }
             
-            if(ctx.usuario.tipo === 2 || ctx.usuario.tipo === 3) {
+            if(ctx.usuario.tipo == 2 || ctx.usuario.tipo == 3) {
                 return clientes;
             } 
         },
@@ -316,20 +336,20 @@ const resolvers = {
                         as: 'vendedor'
                     }
                 },
-                {
-                    $limit: 5
-                },
+                // {
+                //     $limit: 10
+                // },
                 {
                     $sort: { total: -1 }
                 }
             ]);
 
             // verificar si el usuario tiene los privilegios
-            if(ctx.usuario.tipo === 1) {
+            if(ctx.usuario.tipo == 1) {
                 throw new Error('No tiene las credenciales para acceder a esa información');
             }
             
-            if(ctx.usuario.tipo === 2 || ctx.usuario.tipo === 3) {
+            if(ctx.usuario.tipo == 2 || ctx.usuario.tipo == 3) {
                 return vendedores;
             }
         },
@@ -353,20 +373,20 @@ const resolvers = {
                         as: 'vendedor'
                     }
                 },
-                {
-                    $limit: 10
-                },
+                // {
+                //     $limit: 10
+                // },
                 {
                     $sort: { total : -1}
                 }
             ]);
 
             // verificar si el usuario tiene los privilegios
-            if(ctx.usuario.tipo === 1) {
+            if(ctx.usuario.tipo == 1) {
                 throw new Error('No tiene las credenciales para acceder a esa información');
             }
             
-            if(ctx.usuario.tipo === 2 || ctx.usuario.tipo === 3) {
+            if(ctx.usuario.tipo == 2 || ctx.usuario.tipo == 3) {
                 return vendedores;
             }
         },
@@ -450,10 +470,31 @@ const resolvers = {
             input.password = await bcryptjs.hash(password, salt);
 
             // guardarlo en la DB
-            usuario = await Usuario.findOneAndUpdate({ _id : id }, input, { new: true });
+            await Usuario.findOneAndUpdate({ _id : id }, input, { new: true });
 
             return "Contraseña modificada con éxito";
 
+        },
+        actualizarUsuarioEmail: async (_, {id, input}) => { // Función agregada por mí
+            
+            const { email } = input;
+
+            // Revisar si el usuario que desea cambiar el email existe
+            let existeUsuario = await Usuario.findById(id);
+            if (!existeUsuario) {
+                throw new Error('Usuario no encontrado');
+            }
+
+            // Revisar si el correo que se introducirá ya está en uso            
+            const existeEmail = await Usuario.findOne({email});
+            if (existeEmail) {
+                throw new Error('Este email ya está en uso');
+            }
+
+            // guarlarlo en la DB
+            await Usuario.findOneAndUpdate({ _id : id }, input, { new: true })
+
+            return "Email modificado con éxito";
         },
         eliminarUsuario: async (_, {id}, ctx) => {
             // Verificar si existe o no
@@ -497,8 +538,8 @@ const resolvers = {
                 throw new Error('Empresa no encontrada');
             }
 
-            // Verificar si el vendedor pertenece a esa empresa
-            if(empresa.id.toString() !== ctx.usuario.empresa){
+            // Verificar si el vendedor pertenece a esa empresa o si es administrador
+            if(empresa.id.toString() !== ctx.usuario.empresa && ctx.usuario.tipo != 3){
                 throw new Error('No tiene las credenciales para acceder a esa información');
             }
 
@@ -784,7 +825,7 @@ const resolvers = {
             }
 
             // Verificar si el vendedor posee privilegios para eliminar pedidos
-            if(ctx.usuario.tipo === 1 ) {
+            if(ctx.usuario.tipo == 1 ) {
                 throw new Error('No tienes las credenciales para acceder a esa información')
             }
 
