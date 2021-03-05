@@ -704,7 +704,7 @@ const resolvers = {
             let clientePedido = await Pedido.find({ cliente: cliente.id.toString() });
 
             if(clientePedido.length !== 0) {
-                throw new Error('Cliente asociado a un pedido. Elimine dicho pedido antes de eliminar la cliente');
+                throw new Error('Cliente asociado a un pedido. Elimine dicho pedido antes de eliminar al cliente');
             }
 
             // Eliminar Cliente
