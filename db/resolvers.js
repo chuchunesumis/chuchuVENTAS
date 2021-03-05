@@ -628,7 +628,7 @@ const resolvers = {
             let productoPedido = await Pedido.find({ "pedido.id": producto.id.toString() });
 
             if(productoPedido.length !== 0) {
-                throw new Error('Producto asociado a un pedido. Elimine dicho pedido antes de eliminar la producto');
+                throw new Error('Producto asociado a un pedido. Elimine dicho pedido antes de eliminar el producto');
             }
 
             // Eliminar
