@@ -36,7 +36,7 @@ const UsuariosSchema = mongoose.Schema({
     },
     habilitado: {
         type: Boolean,
-        default: true
+        default: false
     }
 });
 // Se hizo modificación del Date.now() por Date.now para obtener la hora del sistema exacta
