@@ -215,9 +215,9 @@ const resolvers = {
                 throw new Error('Pedido no encontrado');
             }
 
-            // Sólo quien lo creó puede verlo
-            if(pedido.vendedor.toString() !== ctx.usuario.id) {
-                throw new Error('No tiene las credenciales para acceder a esa información');
+            // Verificar que sólo las personas que sean de la misma empresa que el lo creó puedan verlo
+            if(pedido.empresa.toString() !== ctx.usuario.empresa) {                
+                throw new Error('No tiene las credenciales para acceder a esa información');                
             }
 
             // retornar el resultado
@@ -503,15 +503,11 @@ const resolvers = {
             if(!usuario) {
                 throw new Error('Usuario no encontrado');
             }
-
-            /*
-            TODO: sólo el administrador del sistema puede eliminar
-                  usuarios, por ende, agregar validación para que
-                  el usuario con tal rango pueda hacerlo.
-                  
-                  Los usuarios sólo podrán modificar sus datos
-                  personajes y cambiar su contraseña
-            */
+            
+            // Verificar si quien elimina es administrador
+            if(ctx.usuario.tipo != 3 ) {
+                throw new Error('No tiene las credenciales para acceder a esa información')
+            }
 
             // Eliminar Usuario
             await Usuario.findOneAndDelete({_id : id});
@@ -555,14 +551,38 @@ const resolvers = {
                 throw new Error('Empresa no encontrada');
             }
 
-            /*
-            TODO: sólo el administrador del sistema puede eliminar
-                  empresas, por ende, agregar validación para que
-                  el usuario con tal rango pueda hacerlo.
-                  
-                  Los miembros de una empresa sólo pueden modificar
-                  los datos de una empresa, pero no elimnarla
-            */
+            // Verificar si quien elimina es administrador
+            if(ctx.usuario.tipo != 3) {
+                throw new Error('No tiene las credenciales para acceder a esa información')
+            }
+
+            // Verificar si la empresa tiene pedidos
+            let empresaPedido = await Pedido.find({ empresa: empresa.id })
+
+            if(empresaPedido.length !== 0) {
+                throw new Error('Empresa asociada a un pedido. Elimine dicho pedido antes de eliminar la empresa');
+            }
+
+            // Verificar si la empresa tiene clientes
+            let empresaCliente = await Cliente.find({ empresa: empresa.id })
+
+            if(empresaCliente.length !== 0) {
+                throw new Error('Empresa asociada a un cliente. Elimine dicho cliente antes de eliminar la empresa');
+            }
+
+            // Verificar si la empresa tiene productos
+            let empresaProducto = await Producto.find({ empresa: empresa.id })
+
+            if(empresaProducto.length !== 0) {
+                throw new Error('Empresa asociada a un producto. Elimine dicho producto antes de eliminar la empresa');
+            }
+
+            // Verificar si la empresa tiene vendedores
+            let empresaUsuario = await Usuario.find({ empresa: empresa.id })
+
+            if(empresaUsuario.length !== 0) {
+                throw new Error('Empresa asociada a un vendedor. Elimine dicho vendedor antes de eliminar la empresa');
+            }
 
             // Eliminar empresa
             await Empresa.findOneAndDelete({_id : id});
@@ -598,9 +618,17 @@ const resolvers = {
         eliminarProducto: async (_, {id}) => {
             // revisar si el producto existe o no
             let producto = await Producto.findById(id);
-
+            
             if(!producto) {
                 throw new Error('Producto no encontrado');
+            }
+
+            // Verificar si el producto está asociado a algún pedido
+            // Sintaxis para buscar un elemento dentro de un objeto que esté en un arreglo
+            let productoPedido = await Pedido.find({ "pedido.id": producto.id.toString() });
+
+            if(productoPedido.length !== 0) {
+                throw new Error('Producto asociado a un pedido. Elimine dicho pedido antes de eliminar la producto');
             }
 
             // Eliminar
@@ -648,10 +676,12 @@ const resolvers = {
                 throw new Error('Este cliente no existe');
             }
 
-            // Verificar si el vendedor es quien edita            
+            // Verificar si el vendedor que lo creó es quien edita
+            /**
             if(cliente.vendedor.toString() !== ctx.usuario.id ) {
                 throw new Error('No tiene las credenciales para acceder a esa información');
             }
+             */
 
             // guardar el cliente
             cliente = await Cliente.findOneAndUpdate({_id : id}, input, {new: true} );
@@ -668,6 +698,13 @@ const resolvers = {
             // Verificar si el cliente pertenece a la misma empresa que el vendedor            
             if(cliente.empresa.toString() !== ctx.usuario.empresa ) {
                 throw new Error('No tiene las credenciales para acceder a esa información');
+            }
+
+            // Verificar si el cliente está asociado a algún pedido
+            let clientePedido = await Pedido.find({ cliente: cliente.id.toString() });
+
+            if(clientePedido.length !== 0) {
+                throw new Error('Cliente asociado a un pedido. Elimine dicho pedido antes de eliminar la cliente');
             }
 
             // Eliminar Cliente
@@ -809,9 +846,11 @@ const resolvers = {
                 throw new Error('El pedido no existe')
             }
 
-            // Verificar si el vendedor que lo creó es quien intenta editar
+            // Verificar si el vendedor que lo creó es quien intenta editar, también si es supervisor o administrador
             if(pedido.vendedor.toString() !== ctx.usuario.id) {
-                throw new Error('No tienes las credenciales para acceder a esa información')
+                if(ctx.usuario.tipo != 2 || ctx.usuario.tipo != 3) {
+                    throw new Error('No tienes las credenciales para acceder a esa información')
+                }
             }
 
             // Actualizar nota del pedido seleccionado
