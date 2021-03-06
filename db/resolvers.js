@@ -200,6 +200,7 @@ const resolvers = {
             try {
                 const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
                                 .populate('cliente')
+                                // .populate('vendedor')
                                 .sort( { creado: -1 } );
                 
                 // console.log(pedidos);
@@ -429,7 +430,7 @@ const resolvers = {
                 throw new Error('El usuario no existe');
             }
 
-            // Revisar si el password es correcto
+            // Revisar si el password es ¡Correcto!
             const passwordCorrecto = await bcryptjs.compare(password, existeUsuario.password );
             if(!passwordCorrecto) {
                 throw new Error('El password es incorrecto')
@@ -507,6 +508,18 @@ const resolvers = {
             // Verificar si quien elimina es administrador
             if(ctx.usuario.tipo != 3 ) {
                 throw new Error('No tiene las credenciales para acceder a esa información')
+            }
+
+            // Verificar si el usuario a eliminar no es el mismo que está logueado
+            if(usuario.id.toString() === ctx.usuario.id) {
+                throw new Error('No puedes eliminar tu propio usuario');
+            }
+
+            // Verificar si el usuario tiene pedidos
+            let usuarioPedido = await Pedido.find({ vendedor: usuario.id })
+
+            if(usuarioPedido.length !== 0) {
+                throw new Error('Usuario asociado a un pedido. Elimine dicho pedido antes de eliminar al usuario');
             }
 
             // Eliminar Usuario
@@ -870,7 +883,7 @@ const resolvers = {
 
             // Eliminar de la DB
             await Pedido.findOneAndDelete({_id: id});
-            return "Pedido Eliminado";
+            return "Pedido eliminado";
         }
     }
 }
