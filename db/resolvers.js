@@ -200,7 +200,19 @@ const resolvers = {
             try {
                 const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
                                 .populate('cliente')
-                                // .populate('vendedor')
+                                .sort( { creado: -1 } );
+                
+                // console.log(pedidos);
+                return pedidos;
+            } catch (error) {
+                console.log(error);
+            }
+        },
+        obtenerPedidosEmpresaCompleto: async (_, {}, ctx) => {
+            try {
+                const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
+                                .populate('cliente')
+                                .populate('vendedor')
                                 .sort( { creado: -1 } );
                 
                 // console.log(pedidos);
