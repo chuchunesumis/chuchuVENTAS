@@ -208,19 +208,19 @@ const resolvers = {
                 console.log(error);
             }
         },
-        obtenerPedidosEmpresaCompleto: async (_, {}, ctx) => {
-            try {
-                const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
-                                .populate('cliente')
-                                .populate('vendedor')
-                                .sort( { creado: -1 } );
+        // obtenerPedidosEmpresaCompleto: async (_, {}, ctx) => {
+        //     try {
+        //         const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
+        //                         .populate('cliente')
+        //                         .populate('vendedor')
+        //                         .sort( { creado: -1 } );
                 
-                // console.log(pedidos);
-                return pedidos;
-            } catch (error) {
-                console.log(error);
-            }
-        },
+        //         // console.log(pedidos);
+        //         return pedidos;
+        //     } catch (error) {
+        //         console.log(error);
+        //     }
+        // },
         obtenerPedido: async (_, {id}, ctx) => {
             // Si el pedido existe o no
             const pedido = await Pedido.findById(id);

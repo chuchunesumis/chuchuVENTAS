@@ -64,7 +64,7 @@ const typeDefs = gql`
         vendedor: ID
     }
 
-    type PedidoSimple {
+    type Pedido {
         id: ID
         pedido: [PedidoGrupo]
         total: Float
@@ -77,18 +77,18 @@ const typeDefs = gql`
         estado: EstadoPedido
     }
 
-    type Pedido {
-        id: ID
-        pedido: [PedidoGrupo]
-        total: Float
-        nota: String
-        creado: Float
-        cliente: Cliente
-        vendedor: Usuario
-        empresa: ID
-        fecha: String
-        estado: EstadoPedido
-    }
+    # type Pedido {
+    #     id: ID
+    #     pedido: [PedidoGrupo]
+    #     total: Float
+    #     nota: String
+    #     creado: Float
+    #     cliente: Cliente
+    #     vendedor: Usuario
+    #     empresa: ID
+    #     fecha: String
+    #     estado: EstadoPedido
+    # }
 
     type PedidoGrupo {
         id: ID
@@ -212,8 +212,8 @@ const typeDefs = gql`
         # Pedidos
         obtenerPedidos: [Pedido]
         obtenerPedidosVendedor: [Pedido]
-        obtenerPedidosEmpresa: [PedidoSimple]
-        obtenerPedidosEmpresaCompleto: [Pedido]
+        obtenerPedidosEmpresa: [Pedido]
+        # obtenerPedidosEmpresaCompleto: [Pedido]
         obtenerPedido(id: ID!) : Pedido
         obtenerPedidosEstado(estado: String!): [Pedido]
         obtenerPedidosCliente(id: ID!) : [Pedido]
