@@ -18,7 +18,15 @@ const crearToken = (usuario, secreta, expiresIn) => {
      * Los campos agregados al jwt.sign, serán añadidos al token,
      * por ende, esa será la info que se pasará por el context
      */ 
-    return jwt.sign( { id, nombre, apellido, empresa, habilitado, tipo }, secreta, { expiresIn } );
+    return jwt.sign( { 
+        id, 
+        nombre, 
+        apellido, 
+        empresa, 
+        habilitado, 
+        tipo, 
+        expira: Math.floor((Date.now() / 1000) + 86400)
+    }, secreta, { expiresIn } );
     
 }
 
@@ -120,8 +128,14 @@ const resolvers = {
             */
 
             return producto;
+        },        
+        totalProductosEmpresa: async (_, {}, ctx ) => {
+            // Query para saber cuántos elementos hay en la tabla Cliente
+            const productos = await Producto.countDocuments({empresa: ctx.usuario.empresa.toString()})
+
+            return productos;
         },
-        obtenerProductosEmpresa: async (_, {}, ctx) => {
+        obtenerProductosEmpresa: async (_, {limite, offset}, ctx) => {
             try {
                 /**
                  * Modifiqué el filtro de la consulta para que se traiga
@@ -129,15 +143,19 @@ const resolvers = {
                  * en común. El nombre anterior era "obtenerProductosVendedor"
                  */
 
-                const productos = await Producto.find({ empresa: ctx.usuario.empresa.toString() });
+                const productos = await Producto.find({ empresa: ctx.usuario.empresa.toString() })
+                                                .limit(limite)
+                                                .skip(offset);
                 return productos;
             } catch (error) {
                 console.log(error);
             }
         },
-        obtenerClientes: async () => {
+        obtenerClientes: async (_, {limite, offset}, ctx) => {
             try {
-                const clientes = await Cliente.find({});
+                const clientes = await Cliente.find({})
+                                              .limit(limite)
+                                              .skip(offset);
                 return clientes;
             } catch (error) {
                 console.log(error);
@@ -151,9 +169,11 @@ const resolvers = {
                 console.log(error);
             }
         },
-        obtenerClientesEmpresa: async (_, {}, ctx ) => {
+        obtenerClientesEmpresa: async (_, {limite, offset}, ctx ) => {
             try {
-                const clientes = await Cliente.find({ empresa: ctx.usuario.empresa.toString() });
+                const clientes = await Cliente.find({ empresa: ctx.usuario.empresa.toString() })
+                                              .limit(limite)
+                                              .skip(offset);
                 return clientes;
             } catch (error) {
                 console.log(error);
@@ -178,6 +198,12 @@ const resolvers = {
 
             return cliente;
         },
+        totalClientesEmpresa: async (_, {}, ctx ) => {
+            // Query para saber cuántos elementos hay en la tabla Cliente
+            const clientes = await Cliente.countDocuments({empresa: ctx.usuario.empresa.toString()})
+
+            return clientes;
+        },
         obtenerPedidos: async () => {
             try {
                 const pedidos = await Pedido.find({});
@@ -196,11 +222,13 @@ const resolvers = {
                 console.log(error);
             }
         },
-        obtenerPedidosEmpresa: async (_, {}, ctx) => {
+        obtenerPedidosEmpresa: async (_, {limite, offset}, ctx) => {
             try {
                 const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
                                 .populate('cliente')
-                                .sort( { creado: -1 } );
+                                .sort( { creado: -1 } )
+                                .limit(limite)
+                                .skip(offset);
                 
                 // console.log(pedidos);
                 return pedidos;
@@ -252,6 +280,12 @@ const resolvers = {
             const pedidos = await Pedido.find({ cliente: id });
 
             return pedidos;
+        },
+        totalPedidosEmpresa: async (_, {}, ctx ) => {
+            // Query para saber cuántos elementos hay en la tabla Cliente
+            const clientes = await Pedido.countDocuments({empresa: ctx.usuario.empresa.toString()})
+
+            return clientes;
         },
         mejoresClientes: async (_, {}, ctx) => {
             const clientes = await Pedido.aggregate([
@@ -442,12 +476,16 @@ const resolvers = {
                 throw new Error('El usuario no existe');
             }
 
-            // Revisar si el password es ¡Correcto!
+            // Revisar si el password es correcto
             const passwordCorrecto = await bcryptjs.compare(password, existeUsuario.password );
             if(!passwordCorrecto) {
                 throw new Error('El password es incorrecto')
             }
 
+            // const expira = {expira: Math.floor(Date.now() / 1000)}
+
+            // await Usuario.findOneAndUpdate({ _id : existeUsuario._id }, expira, { new: true})
+            
             // Crear el token
             return {
                 token: crearToken(existeUsuario, process.env.SECRETA, '24h' )

@@ -37,7 +37,11 @@ const UsuariosSchema = mongoose.Schema({
     habilitado: {
         type: Boolean,
         default: false
+    },
+    expira: {
+        type: Number
     }
+    
 });
 // Se hizo modificación del Date.now() por Date.now para obtener la hora del sistema exacta
 module.exports = mongoose.model('Usuario', UsuariosSchema);
