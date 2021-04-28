@@ -226,6 +226,7 @@ const typeDefs = gql`
         # Búsquedas Avanzadas
         mejoresClientes: [TopCliente]
         mejoresClientesEmpresa: [TopCliente]
+        mejoresDeudoresEmpresa: [TopCliente]
         mejoresVendedores: [TopVendedor]
         mejoresVendedoresEmpresa: [TopVendedor]
         buscarProducto(texto: String!) : [Producto]

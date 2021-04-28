@@ -368,6 +368,55 @@ const resolvers = {
                 return clientes;
             } 
         },
+        mejoresDeudoresEmpresa: async (_, {}, ctx) => {
+            
+            /**
+             * Resolver para graficar los mejores clientes 
+             * sólo de la empresa a la cual el vendedor 
+             * forma parte
+             * 
+             * NOTA: se usa el "mongoose.Types.ObjectId" porque
+             *       el campo "empresa" es un ObjectId, no
+             *       funcionó el hacer uso de la función 
+             *       "toString()"
+             */
+            
+            const clientes = await Pedido.aggregate([
+                { $match : 
+                    { $and: [ 
+                        { empresa: mongoose.Types.ObjectId(ctx.usuario.empresa) }, 
+                        { estado: "PENDIENTE" } 
+                    ] } 
+                },
+                { $group : {  
+                    _id : "$cliente",
+                    total: { $sum: '$total'}
+                }},
+                {
+                    $lookup: {
+                        from: 'clientes',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: "cliente"
+                    }
+                },
+                // {
+                //     $limit: 10
+                // },
+                {
+                    $sort : { total : -1 }
+                }
+            ]);
+
+            // verificar si el usuario tiene los privilegios
+            if(ctx.usuario.tipo == 1) {
+                throw new Error('No tiene las credenciales para acceder a esa información');
+            }
+            
+            if(ctx.usuario.tipo == 2 || ctx.usuario.tipo == 3) {
+                return clientes;
+            } 
+        },
         mejoresVendedores: async (_, {}, ctx) => {
             const vendedores = await Pedido.aggregate([
                 { $match : { estado: "COMPLETADO"} },
