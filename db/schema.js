@@ -202,22 +202,21 @@ const typeDefs = gql`
 
         # Productos
         obtenerProductos: [Producto]        
-        obtenerProductosEmpresa(limite: Int, offset: Int): [Producto]
+        obtenerProductosEmpresa: [Producto]
         obtenerProducto(id: ID!) : Producto
         totalProductosEmpresa: String
 
         # Clientes
         obtenerClientes(limite: Int, offset: Int): [Cliente]
         obtenerClientesVendedor: [Cliente]
-        obtenerClientesEmpresa(limite: Int, offset: Int): [Cliente]
+        obtenerClientesEmpresa: [Cliente]
         obtenerCliente(id: ID!): Cliente
         totalClientesEmpresa: String
 
         # Pedidos
         obtenerPedidos: [Pedido]
         obtenerPedidosVendedor: [Pedido]
-        obtenerPedidosEmpresa(limite: Int, offset: Int): [Pedido]
-        # obtenerPedidosEmpresaCompleto: [Pedido]
+        obtenerPedidosEmpresa: [Pedido]
         obtenerPedido(id: ID!) : Pedido
         obtenerPedidosEstado(estado: String!): [Pedido]
         obtenerPedidosCliente(id: ID!) : [Pedido]

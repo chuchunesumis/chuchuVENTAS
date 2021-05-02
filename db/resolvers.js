@@ -135,7 +135,7 @@ const resolvers = {
 
             return productos;
         },
-        obtenerProductosEmpresa: async (_, {limite, offset}, ctx) => {
+        obtenerProductosEmpresa: async (_, {}, ctx) => {
             try {
                 /**
                  * Modifiqué el filtro de la consulta para que se traiga
@@ -144,8 +144,8 @@ const resolvers = {
                  */
 
                 const productos = await Producto.find({ empresa: ctx.usuario.empresa.toString() })
-                                                .limit(limite)
-                                                .skip(offset);
+                                                // .limit(limite)
+                                                // .skip(offset);
                 return productos;
             } catch (error) {
                 console.log(error);
@@ -169,11 +169,11 @@ const resolvers = {
                 console.log(error);
             }
         },
-        obtenerClientesEmpresa: async (_, {limite, offset}, ctx ) => {
+        obtenerClientesEmpresa: async (_, {}, ctx ) => {
             try {
                 const clientes = await Cliente.find({ empresa: ctx.usuario.empresa.toString() })
-                                              .limit(limite)
-                                              .skip(offset);
+                                            //   .limit(limite)
+                                            //   .skip(offset);
                 return clientes;
             } catch (error) {
                 console.log(error);
@@ -222,13 +222,13 @@ const resolvers = {
                 console.log(error);
             }
         },
-        obtenerPedidosEmpresa: async (_, {limite, offset}, ctx) => {
+        obtenerPedidosEmpresa: async (_, {}, ctx) => {
             try {
                 const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
                                 .populate('cliente')
                                 .sort( { creado: -1 } )
-                                .limit(limite)
-                                .skip(offset);
+                                // .limit(limite)
+                                // .skip(offset);
                 
                 // console.log(pedidos);
                 return pedidos;
@@ -236,19 +236,6 @@ const resolvers = {
                 console.log(error);
             }
         },
-        // obtenerPedidosEmpresaCompleto: async (_, {}, ctx) => {
-        //     try {
-        //         const pedidos = await Pedido.find({ empresa: ctx.usuario.empresa})
-        //                         .populate('cliente')
-        //                         .populate('vendedor')
-        //                         .sort( { creado: -1 } );
-                
-        //         // console.log(pedidos);
-        //         return pedidos;
-        //     } catch (error) {
-        //         console.log(error);
-        //     }
-        // },
         obtenerPedido: async (_, {id}, ctx) => {
             // Si el pedido existe o no
             const pedido = await Pedido.findById(id);
@@ -269,7 +256,7 @@ const resolvers = {
 
             return pedidos;
         },
-        obtenerPedidosCliente: async (_, {id}) => {
+        obtenerPedidosCliente: async (_, { id }) => {
 
             /**
              * este resolver consulta todos los pedidos
