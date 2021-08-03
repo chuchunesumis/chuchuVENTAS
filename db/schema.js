@@ -122,7 +122,6 @@ const typeDefs = gql`
         empresa: ID
         tipo: String
         habilitado: String
-        
     }
 
     input UsuarioInputPassword {

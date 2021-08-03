@@ -3,6 +3,7 @@ const Empresa = require('../models/Empresa');
 const Producto = require('../models/Producto');
 const Cliente = require('../models/Cliente');
 const Pedido = require('../models/Pedido');
+
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -64,10 +65,11 @@ const resolvers = {
         },
         obtenerUsuariosSinEmpresa: async (_, {}) => {
             try {
-                const usuarios = await Usuario.find({ $or: [
-                                                            {empresa: { $exists: false }}, 
-                                                            {empresa: { $type: 10 } }
-                                                        ]});
+                const usuarios = await Usuario.find({ 
+                  $or: [
+                    {empresa: { $exists: false }}, 
+                    {empresa: { $type: 10 } }
+                  ]});
                 return usuarios;
             } catch (error) {
                 console.log(error);
@@ -82,15 +84,27 @@ const resolvers = {
 
             return usuario;
         },
-        obtenerEmpresas: async () => {
+        obtenerEmpresas: async (_, {}, ctx) => {
+
+            // Validar que el usuario logueado posee privilegios de administrador
+            if(ctx.usuario.tipo != 3 ) {
+              throw new Error('No tiene las credenciales para acceder a esa información')
+            }
+
             try {
-                const empresas = await Empresa.find({});
-                return empresas;
+              const empresas = await Empresa.find({});
+              return empresas;
             } catch (error) {
-                console.log(error);
+              console.log(error);
             }
         },
-        obtenerEmpresa: async (_, { id }) => {            
+        obtenerEmpresa: async (_, { id }, ctx) => {   
+                    
+            // Validar que el usuario logueado posee privilegios de administrador
+            if(ctx.usuario.tipo != 3 ) {
+              throw new Error('No tiene las credenciales para acceder a esa información')
+            }
+            
             const empresa = await Empresa.findById(id);
             
             if(!empresa) {
@@ -238,7 +252,9 @@ const resolvers = {
         },
         obtenerPedido: async (_, {id}, ctx) => {
             // Si el pedido existe o no
-            const pedido = await Pedido.findById(id);
+            const pedido = await Pedido
+                          .findById(id)
+                          .populate('cliente');
             if(!pedido) {
                 throw new Error('Pedido no encontrado');
             }
@@ -517,10 +533,6 @@ const resolvers = {
             if(!passwordCorrecto) {
                 throw new Error('El password es incorrecto')
             }
-
-            // const expira = {expira: Math.floor(Date.now() / 1000)}
-
-            // await Usuario.findOneAndUpdate({ _id : existeUsuario._id }, expira, { new: true})
             
             // Crear el token
             return {
@@ -812,131 +824,133 @@ const resolvers = {
         },
         nuevoPedido: async (_, {input}, ctx) => {
 
-            const { cliente } = input
-            
-            // Verificar si el cliente existe o no
-            let clienteExiste = await Cliente.findById(cliente);
+          const { cliente } = input
+          
+          // Verificar si el cliente existe o no
+          let clienteExiste = await Cliente.findById(cliente);
 
-            if(!clienteExiste) {
-                throw new Error('Ese cliente no existe');
-            }
+          if(!clienteExiste) {
+              throw new Error('Ese cliente no existe');
+          }
 
-            // Verificar si el cliente es del vendedor
+          // Verificar si el cliente es del vendedor
 
-                /*
-                    No verificaré si el cliente es del vendedor,
-                    para que a futuro, yo pueda realizar filtrado
-                    en el front-end según el vendedor que creó al 
-                    cliente, o la empresa que a la cual pertenece
-                    el vendedor            
+          /*
+              No verificaré si el cliente es del vendedor,
+              para que a futuro, yo pueda realizar filtrado
+              en el front-end según el vendedor que creó al 
+              cliente, o la empresa que a la cual pertenece
+              el vendedor            
+          
+          if(clienteExiste.vendedor.toString() !== ctx.usuario.id ) {
+              throw new Error('No tienes las credenciales para acceder a esa información');
+          }
+          
+          */
+
+          // Revisar que el stock esté disponible
+          for await ( const articulo of input.pedido ) {
+            const { id } = articulo;
+
+            const producto = await Producto.findById(id);                
+
+            if(articulo.cantidad > producto.existencia) {
+              throw new Error(`El artículo "${producto.nombre}" excede la cantidad disponible`);
                 
-                if(clienteExiste.vendedor.toString() !== ctx.usuario.id ) {
-                    throw new Error('No tienes las credenciales para acceder a esa información');
-                }
-                
-                */
+            } else {
+              // Restar la cantidad a lo disponible
+              producto.existencia = producto.existencia - articulo.cantidad
 
-            // Revisar que el stock esté disponible
-            for await ( const articulo of input.pedido ) {
-                const { id } = articulo;
-
-                const producto = await Producto.findById(id);                
-
-                if(articulo.cantidad > producto.existencia) {
-                    throw new Error(`El artículo "${producto.nombre}" excede la cantidad disponible`);
-                    
-                } else {
-                    // Restar la cantidad a lo disponible
-                    producto.existencia = producto.existencia - articulo.cantidad
-
-                    await producto.save();
-                }
+              await producto.save();
             }
+          }
 
-            // Crear un nuevo pedido
-            const nuevoPedido = new Pedido(input);
+          // Crear un nuevo pedido
+          const nuevoPedido = new Pedido(input);
 
-            // Asignarle un vendedor
-            nuevoPedido.vendedor = ctx.usuario.id;
+          // Asignarle un vendedor
+          nuevoPedido.vendedor = ctx.usuario.id;
 
-            // Asignarle la empresa a la cual pertenece el vendedor
-            nuevoPedido.empresa = ctx.usuario.empresa;
+          // Asignarle la empresa a la cual pertenece el vendedor
+          nuevoPedido.empresa = ctx.usuario.empresa;
 
-            // Guardarlo en la DB
-            const resultado = await nuevoPedido.save();
-            return resultado;
+          // Guardarlo en la DB
+          const resultado = await nuevoPedido.save();
+          return resultado;
         },
         actualizarPedido: async(_, {id, input}, ctx) => {
 
-            const { cliente } = input;
-            // console.log(input)
+          const { cliente } = input;
+          // console.log(cliente)
 
-            // Si el pedido existe
-            let existePedido = await Pedido.findById(id);
-            if(!existePedido) {
-                throw new Error('El pedido no existe');
-            }
+          // Si el pedido existe
+          let existePedido = await await Pedido.findById(id).populate('cliente');
+          if(!existePedido) {
+              throw new Error('El pedido no existe');
+          }
 
-            // Si el cliente existe
-            const existeCliente = await Cliente.findById(cliente);
-            if(!existeCliente) {
-                throw new Error('El cliente no existe');
-            }
+          // Si el cliente existe
+          const existeCliente = await Cliente.findById(cliente);
+          if(!existeCliente) {
+              throw new Error('El cliente no existe');
+          }
+              
+          // Si el cliente y pedido pertenece a la empresa     
+          if(existeCliente.empresa.toString() !== ctx.usuario.empresa ) {
+              throw new Error('No tiene las credenciales para acceder a esa información');
+          }
+
+          // Revisar el stock de productos
+          if( input.pedido ) {
+            for await ( const articulo of input.pedido ) {
+
+              const { id } = articulo;
+              // console.log(input.pedido)
+              
+              const producto = await Producto.findById(id);
+
+              if(articulo.cantidad > producto.existencia) {
+                throw new Error(`El articulo: '${producto.nombre}' excede la cantidad disponible`);
+              } else {
+
+                /**
+                 * sintaxis modificada en el cálculo de la existencia 
+                 * de stock según los artículos añadidos al pedido
+                 */
+                // Restar la cantidad a lo disponible
+                const cantidadAnterior = input.pedido.find(item => item.id === id).cantidad;
                 
-            // Si el cliente y pedido pertenece a la empresa     
-            if(existeCliente.empresa.toString() !== ctx.usuario.empresa ) {
-                throw new Error('No tiene las credenciales para acceder a esa información');
+                producto.existencia = producto.existencia + cantidadAnterior - articulo.cantidad;
+
+                await producto.save();
+              }
             }
+          } 
 
-            // Revisar el stock de productos
-            if( input.pedido ) {
-                for await ( const articulo of input.pedido ) {
-                    const { id } = articulo;
-                    
-                    const producto = await Producto.findById(id);
-    
-                    if(articulo.cantidad > producto.existencia) {
-                        throw new Error(`El articulo: '${producto.nombre}' excede la cantidad disponible`);
-                    } else {
+          if(input.estado === 'ANULADO') {
 
-                        /**
-                         * sintaxis modificada en el cálculo de la existencia 
-                         * de stock según los artículos añadidos al pedido
-                         */
-                        // Restar la cantidad a lo disponible
-                        const cantidadAnterior = pedido.pedido.find(item => item.id === id).cantidad;
-                        
-                        producto.existencia = producto.existencia + cantidadAnterior - articulo.cantidad;
-    
-                        await producto.save();
-                    }
-                }
-            } 
+              let pedido = await Pedido.findById(id).populate('cliente');
+              for await ( const articulo of pedido.pedido ) {
 
-            if(input.estado === 'ANULADO') {
+                  const producto = await Producto.findById(articulo.id);
+                  // console.log(articulo)
+                  
+                  if(!pedido) {
+                      throw new Error('El pedido no existe');
+                  }
+                  
+                  const cantidadAnterior = pedido.pedido.find(item => item.id === articulo.id).cantidad;
 
-                let pedido = await Pedido.findById(id);
-                for await ( const articulo of pedido.pedido ) {
+                  producto.existencia = producto.existencia + cantidadAnterior;
 
-                    const producto = await Producto.findById(articulo.id);
-                    // console.log(articulo)
-                    
-                    if(!pedido) {
-                        throw new Error('El pedido no existe');
-                    }
-                    
-                    const cantidadAnterior = pedido.pedido.find(item => item.id === articulo.id).cantidad;
+                  await producto.save();
+              }
+          }
+          
 
-                    producto.existencia = producto.existencia + cantidadAnterior;
-
-                    await producto.save();
-                }
-            }
-            
-
-            // Guardar el pedido
-            const resultado = await Pedido.findOneAndUpdate({_id: id}, input, { new: true });
-            return resultado;
+          // Guardar el pedido
+          const resultado = await Pedido.findOneAndUpdate({_id: id}, input, { new: true }).populate('cliente');
+          return resultado;
         },
         actualizarNotaPedido: async (_, {id, input}, ctx) => {
             // Verificar si el pedido existe o no
